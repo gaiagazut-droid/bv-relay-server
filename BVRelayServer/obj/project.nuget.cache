@@ -1,0 +1,22 @@
+{
+  "version": 2,
+  "dgSpecHash": "Sm5FTjkSquk=",
+  "success": true,
+  "projectFilePath": "/Users/gaiagazut/Documents/Codex/2026-04-29/est-ce-que-tu-saurais-coder/BVRelayServer/BVRelayServer.csproj",
+  "expectedPackageFiles": [
+    "/Users/gaiagazut/.nuget/packages/microsoft.netcore.app.ref/8.0.27/microsoft.netcore.app.ref.8.0.27.nupkg.sha512",
+    "/Users/gaiagazut/.nuget/packages/microsoft.aspnetcore.app.ref/8.0.27/microsoft.aspnetcore.app.ref.8.0.27.nupkg.sha512",
+    "/Users/gaiagazut/.nuget/packages/microsoft.netcore.app.host.osx-arm64/8.0.27/microsoft.netcore.app.host.osx-arm64.8.0.27.nupkg.sha512"
+  ],
+  "logs": [
+    {
+      "code": "NU1900",
+      "level": "Warning",
+      "message": "Une erreur s’est produite lors de l’obtention des données de vulnérabilité du package\u00A0: Impossible de charger l'index de service pour la source https://api.nuget.org/v3/index.json.",
+      "projectPath": "/Users/gaiagazut/Documents/Codex/2026-04-29/est-ce-que-tu-saurais-coder/BVRelayServer/BVRelayServer.csproj",
+      "warningLevel": 1,
+      "filePath": "/Users/gaiagazut/Documents/Codex/2026-04-29/est-ce-que-tu-saurais-coder/BVRelayServer/BVRelayServer.csproj",
+      "targetGraphs": []
+    }
+  ]
+}
