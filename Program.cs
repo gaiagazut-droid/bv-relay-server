@@ -11,10 +11,20 @@ var app = builder.Build();
 var relay = app.Configuration.GetSection("Relay").Get<RelayOptions>() ?? new RelayOptions();
 Directory.CreateDirectory(relay.DataPath);
 
+const string RelayVersion = "2026-06-15-heic";
+
 var allowedExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
 {
-    ".pdf", ".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff",
+    ".pdf", ".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".heic", ".heif",
     ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx"
+};
+
+var contentTypeExtensions = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+{
+    ["image/heic"] = ".heic",
+    ["image/heif"] = ".heif",
+    ["image/heic-sequence"] = ".heic",
+    ["image/heif-sequence"] = ".heif"
 };
 
 var officeExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
@@ -49,10 +59,11 @@ app.MapGet("/s/{storeId}", (string storeId) =>
   <main>
     <h1>Envoyer un fichier</h1>
     <p>Choisissez un PDF, une image ou un document Office. Le fichier arrivera directement sur l'ordinateur du magasin.</p>
-    <input id="file" type="file" accept=".pdf,.jpg,.jpeg,.png,.bmp,.tif,.tiff,.doc,.docx,.xls,.xlsx,.ppt,.pptx">
+    <input id="file" type="file" accept=".pdf,.jpg,.jpeg,.png,.bmp,.tif,.tiff,.heic,.heif,image/heic,image/heif,.doc,.docx,.xls,.xlsx,.ppt,.pptx">
     <button id="send">Envoyer</button>
     <p class="note">Le fichier sera supprime automatiquement apres traitement.</p>
     <p id="status"></p>
+    <p class="note">Version relais : RELAY_VERSION</p>
   </main>
   <script>
     const status = document.getElementById('status');
@@ -68,10 +79,14 @@ app.MapGet("/s/{storeId}", (string storeId) =>
   </script>
 </body>
 </html>
-""".Replace("STORE_ID", Uri.EscapeDataString(storeId));
+"""
+        .Replace("STORE_ID", Uri.EscapeDataString(storeId))
+        .Replace("RELAY_VERSION", RelayVersion);
 
     return Results.Content(html, "text/html; charset=utf-8");
 });
+
+app.MapGet("/api/version", () => Results.Json(new { version = RelayVersion }));
 
 app.MapPost("/api/stores/{storeId}/upload", async (string storeId, HttpRequest request) =>
 {
@@ -92,9 +107,17 @@ app.MapPost("/api/stores/{storeId}/upload", async (string storeId, HttpRequest r
     }
 
     var extension = Path.GetExtension(file.FileName);
+    if (string.IsNullOrWhiteSpace(extension)
+        && contentTypeExtensions.TryGetValue(file.ContentType, out var extensionFromContentType))
+    {
+        extension = extensionFromContentType;
+    }
+
     if (!allowedExtensions.Contains(extension))
     {
-        return Results.BadRequest("Type de fichier non accepte.");
+        return Results.BadRequest(
+            "Type de fichier non accepte. " +
+            "Formats acceptes : PDF, images JPG/PNG/TIFF/HEIC et documents Office.");
     }
 
     var id = Guid.NewGuid().ToString("N");
