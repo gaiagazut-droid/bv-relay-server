@@ -11,6 +11,9 @@ var app = builder.Build();
 var relay = app.Configuration.GetSection("Relay").Get<RelayOptions>() ?? new RelayOptions();
 Directory.CreateDirectory(relay.DataPath);
 
+// Independent queue for the 100 x 150 mm shipping-label workflow.
+app.MapLabelRelay();
+
 var allowedExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
 {
     ".pdf", ".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff",
