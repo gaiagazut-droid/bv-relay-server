@@ -4,4 +4,11 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
+  <ItemGroup>
+    <!-- Historical duplicate sources kept in the repository are not part of
+         the root service built by Render. -->
+    <Compile Remove="BVRelayServer/**/*.cs" />
+    <Content Remove="BVRelayServer/**" />
+    <None Remove="BVRelayServer/**" />
+  </ItemGroup>
 </Project>

@@ -11,6 +11,10 @@ var app = builder.Build();
 var relay = app.Configuration.GetSection("Relay").Get<RelayOptions>() ?? new RelayOptions();
 Directory.CreateDirectory(relay.DataPath);
 
+// The shipping-label relay is intentionally isolated from the historical
+// BVService queue. It has its own routes, keys, storage tree and retention.
+app.MapLabelRelay();
+
 const string RelayVersion = "2026-06-15-heic";
 
 var allowedExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
