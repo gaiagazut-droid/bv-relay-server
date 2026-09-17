@@ -12,13 +12,13 @@ public static class LabelRelayEndpoints
     {
         var options = app.Configuration.GetSection("LabelRelay").Get<LabelRelayOptions>() ?? new();
 
-        app.MapGet("/labels/{publicKey}", (string publicKey) =>
+        app.MapGet("/imprimer/{publicKey}", (string publicKey) =>
         {
             if (!PublicKeyIsValid(options, publicKey)) return Results.NotFound();
             return Results.Content(ClientPage.Replace("PUBLIC_KEY", Uri.EscapeDataString(publicKey)), "text/html; charset=utf-8");
         });
 
-        app.MapPost("/api/labels/{publicKey}/upload", async (string publicKey, HttpRequest request) =>
+        app.MapPost("/api/qr-print/{publicKey}/upload", async (string publicKey, HttpRequest request) =>
         {
             if (!PublicKeyIsValid(options, publicKey)) return Results.NotFound();
             if (!AllowUpload(request)) return Results.Json(new { message = "Trop de tentatives. Réessayez dans quelques minutes." }, statusCode: 429);
@@ -62,7 +62,7 @@ public static class LabelRelayEndpoints
             return Results.Ok(new { id, token, expiresIn = options.RetentionMinutes * 60 });
         });
 
-        app.MapGet("/api/labels/{publicKey}/jobs/{id}", async (string publicKey, string id, string token) =>
+        app.MapGet("/api/qr-print/{publicKey}/jobs/{id}", async (string publicKey, string id, string token) =>
         {
             var access = await GetClientJob(options, publicKey, id, token);
             if (access.Error is not null) return access.Error;
@@ -71,11 +71,11 @@ public static class LabelRelayEndpoints
             {
                 status = job.Status,
                 message = job.Message,
-                preview = job.Status is "prepared" or "print_requested" ? $"/api/labels/{Uri.EscapeDataString(publicKey)}/jobs/{id}/preview?token={Uri.EscapeDataString(token)}" : null
+                preview = job.Status is "prepared" or "print_requested" ? $"/api/qr-print/{Uri.EscapeDataString(publicKey)}/jobs/{id}/preview?token={Uri.EscapeDataString(token)}" : null
             });
         });
 
-        app.MapGet("/api/labels/{publicKey}/jobs/{id}/preview", async (string publicKey, string id, string token) =>
+        app.MapGet("/api/qr-print/{publicKey}/jobs/{id}/preview", async (string publicKey, string id, string token) =>
         {
             var access = await GetClientJob(options, publicKey, id, token);
             if (access.Error is not null) return access.Error;
@@ -85,7 +85,7 @@ public static class LabelRelayEndpoints
                 : Results.NotFound();
         });
 
-        app.MapPost("/api/labels/{publicKey}/jobs/{id}/print", async (string publicKey, string id, string token) =>
+        app.MapPost("/api/qr-print/{publicKey}/jobs/{id}/print", async (string publicKey, string id, string token) =>
         {
             await Gate.WaitAsync();
             try
@@ -300,9 +300,9 @@ input,button{width:100%;font-size:17px;margin-top:14px}input{padding:13px;border
 <p class="note">Une seule copie. Le document est supprimé automatiquement après l’impression ou au bout de quelques minutes.</p></main><script>
 const key='PUBLIC_KEY',statusEl=document.querySelector('#status'),preview=document.querySelector('#preview'),printBtn=document.querySelector('#print'),prepareBtn=document.querySelector('#prepare');let job=null,timer=null;
 async function json(r){const d=await r.json().catch(()=>({message:'Une erreur est survenue.'}));if(!r.ok)throw new Error(d.message||'Une erreur est survenue.');return d}
-prepareBtn.onclick=async()=>{const file=document.querySelector('#file').files[0];if(!file){statusEl.textContent='Choisissez un fichier PDF.';return}prepareBtn.disabled=true;statusEl.textContent='Envoi et préparation en cours…';preview.style.display='none';printBtn.style.display='none';const form=new FormData();form.append('file',file);try{job=await json(await fetch(`/api/labels/${key}/upload`,{method:'POST',body:form}));poll()}catch(e){statusEl.textContent=e.message;prepareBtn.disabled=false}};
-async function poll(){if(!job)return;try{const d=await json(await fetch(`/api/labels/${key}/jobs/${job.id}?token=${encodeURIComponent(job.token)}`,{cache:'no-store'}));if(d.status==='prepared'){statusEl.textContent='Vérifiez l’aperçu avant d’imprimer.';preview.src=d.preview+'&v='+Date.now();preview.style.display='block';printBtn.style.display='block';prepareBtn.disabled=false;return}if(d.status==='printed'){statusEl.textContent=d.message;printBtn.style.display='none';return}if(d.status==='failed'){statusEl.textContent=d.message;prepareBtn.disabled=false;return}statusEl.textContent=(d.status==='print_requested'||d.status==='printing')?'Impression en cours…':'Préparation en cours…';timer=setTimeout(poll,1500)}catch(e){statusEl.textContent=e.message;prepareBtn.disabled=false}};
-printBtn.onclick=async()=>{printBtn.disabled=true;statusEl.textContent='Envoi à l’imprimante…';try{await json(await fetch(`/api/labels/${key}/jobs/${job.id}/print?token=${encodeURIComponent(job.token)}`,{method:'POST'}));poll()}catch(e){statusEl.textContent=e.message;printBtn.disabled=false}};
+prepareBtn.onclick=async()=>{const file=document.querySelector('#file').files[0];if(!file){statusEl.textContent='Choisissez un fichier PDF.';return}prepareBtn.disabled=true;statusEl.textContent='Envoi et préparation en cours…';preview.style.display='none';printBtn.style.display='none';const form=new FormData();form.append('file',file);try{job=await json(await fetch(`/api/qr-print/${key}/upload`,{method:'POST',body:form}));poll()}catch(e){statusEl.textContent=e.message;prepareBtn.disabled=false}};
+async function poll(){if(!job)return;try{const d=await json(await fetch(`/api/qr-print/${key}/jobs/${job.id}?token=${encodeURIComponent(job.token)}`,{cache:'no-store'}));if(d.status==='prepared'){statusEl.textContent='Vérifiez l’aperçu avant d’imprimer.';preview.src=d.preview+'&v='+Date.now();preview.style.display='block';printBtn.style.display='block';prepareBtn.disabled=false;return}if(d.status==='printed'){statusEl.textContent=d.message;printBtn.style.display='none';return}if(d.status==='failed'){statusEl.textContent=d.message;prepareBtn.disabled=false;return}statusEl.textContent=(d.status==='print_requested'||d.status==='printing')?'Impression en cours…':'Préparation en cours…';timer=setTimeout(poll,1500)}catch(e){statusEl.textContent=e.message;prepareBtn.disabled=false}};
+printBtn.onclick=async()=>{printBtn.disabled=true;statusEl.textContent='Envoi à l’imprimante…';try{await json(await fetch(`/api/qr-print/${key}/jobs/${job.id}/print?token=${encodeURIComponent(job.token)}`,{method:'POST'}));poll()}catch(e){statusEl.textContent=e.message;printBtn.disabled=false}};
 </script></body></html>
 """;
 }
